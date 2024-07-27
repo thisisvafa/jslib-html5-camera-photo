@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Photo Resize Example</title>
+</head>
+<body>
+    <h1>Camera Photo Resize Example</h1>
+    <video id="videoElement" autoplay style="width: 360px; height: 360px; object-fit: cover;"></video>
+    <button id="takePhotoButton">Take Photo</button>
+    <img id="photo" alt="Photo will appear here" />
+
+    <script src="/jslib-html5-camera-photo.min.js"></script>
+    <script>
+        var FACING_MODES = JslibHtml5CameraPhoto.FACING_MODES;
+        var IMAGE_TYPES = JslibHtml5CameraPhoto.IMAGE_TYPES;
+
+        const videoElement = document.getElementById('videoElement');
+        const photoElement = document.getElementById('photo');
+        const takePhotoButton = document.getElementById('takePhotoButton');
+
+        var cameraPhoto = new JslibHtml5CameraPhoto.default(videoElement);
+
+        function startCamera() {
+            // cameraPhoto.startCameraMaxResolution(FACING_MODES.USER).then(() => {
+            cameraPhoto.startCamera(FACING_MODES.USER).then(() => {
+                console.log('Camera started!');
+            }).catch((error) => {
+                console.error('Camera not started!', error);
+            });
+        }
+
+        function cropAndResizeImage(base64Str, newWidth, newHeight) {
+            return new Promise((resolve) => {
+                let img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+
+                    let sideLength = Math.min(img.width, img.height);
+                    let startX = (img.width - sideLength) / 2;
+                    let startY = (img.height - sideLength) / 2;
+
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+
+                    ctx.drawImage(img, startX, startY, sideLength, sideLength, 0, 0, newWidth, newHeight);
+                    resolve(canvas.toDataURL('image/jpeg'));
+                };
+            });
+        }
+
+        function takePhoto() {
+            var sizeFactor = 1;
+            var imageType = IMAGE_TYPES.JPG;
+            var imageCompression = 1;
+
+            var config = {
+                sizeFactor,
+                imageType,
+                imageCompression
+            };
+
+            var dataUri = cameraPhoto.getDataUri(config);
+            cropAndResizeImage(dataUri, 1800, 1800).then((resizedDataUri) => {
+                photoElement.src = resizedDataUri;
+                console.log('Cropped and resized photo:', resizedDataUri);
+            }).catch((error) => {
+                console.error('Error cropping and resizing photo:', error);
+            });
+        }
+
+        takePhotoButton.addEventListener('click', takePhoto);
+
+        startCamera();
+    </script>
+</body>
+</html>
